@@ -44,8 +44,13 @@ public class UserController {
     }
 
     @GetMapping("/find-user")
-    public ResponseEntity<?> getUser(@RequestParam(required = false, defaultValue = "") String searchParam) {
-        return new ResponseEntity<>(userService.getUsers(searchParam), HttpStatus.OK);
+    public ResponseEntity<?> getUser(@RequestParam(required = false, defaultValue = "")Optional<String>searchParam,
+                                     @RequestParam(required=false) Optional<Long> ageParam,
+                                     @RequestParam(required = false) Optional<String> departmentParam,
+                                     @RequestParam(required = false) Optional<String> fromParam,
+                                     @RequestParam(required = false) Optional<String> toParam) {
+
+        return new ResponseEntity<>(userService.getUsers(searchParam, ageParam, departmentParam, fromParam, toParam), HttpStatus.OK);
     }
 
 }

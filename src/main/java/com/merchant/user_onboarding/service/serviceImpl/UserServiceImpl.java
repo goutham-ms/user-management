@@ -1,5 +1,6 @@
 package com.merchant.user_onboarding.service.serviceImpl;
 
+import com.merchant.user_onboarding.exceptions.DateNotValidException;
 import com.merchant.user_onboarding.exceptions.UserNotFoundException;
 import com.merchant.user_onboarding.model.UserEntity;
 import com.merchant.user_onboarding.repository.UserRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -86,23 +88,39 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-	public List<UserVO> getUsers(String keyword) {
-		String search = "%" + keyword + "%";
-		Optional<List<UserEntity>> optionalUsers = userRepository.getUsers(search);
+    public List<UserVO> getUsers(Optional<String> keyword, Optional<Long> age, Optional<String> dapartment, Optional<String> from, Optional<String> to) {
+
+        if(from.isPresent()) {
+            if(to.isPresent()) {
+                try {
+                    LocalDate fromDate = LocalDate.parse(from.get());
+                    LocalDate toDate = LocalDate.parse(to.get());
+                    if(toDate.isBefore(fromDate)) {
+                        throw new DateNotValidException("From-date should be before To-date");
+                    }
+                }catch(DateTimeParseException ex) {
+                    throw new DateNotValidException("Enter a valid Date!");
+                }
 
 
-		if(optionalUsers.isPresent()) {
-			List<UserEntity> users = optionalUsers.get();
+            } else {
+                throw new DateNotValidException("To Date is also required");
+            }
+        }
 
-			List<UserVO> usersVO = users.stream()
-					.map(user -> new UserVO(user.getUserId(), user.getUserName(),
-							user.getAge(), user.getDepartment(), user.getDateOfBirth().toString(),
-							user.getRegisteredDate().toString(), user.getLastUpdated().toString()))
-					.collect(Collectors.toList());
-			return usersVO;
-		} else {
-			throw new UserNotFoundException("No user found!");
-		}
+        List<UserEntity> users = userRepository.findUsersByCriteria(keyword, age, dapartment, from, to);
 
-	}
+        if(!users.isEmpty()) {
+
+            List<UserVO> usersVO = users.stream()
+                    .map(user -> new UserVO(user.getUserId(), user.getUserName(),
+                            user.getAge(), user.getDepartment(), user.getDateOfBirth().toString(),
+                            user.getRegisteredDate().toString(), user.getLastUpdated().toString()))
+                    .collect(Collectors.toList());
+            return usersVO;
+        } else {
+            throw new UserNotFoundException("No user found!");
+        }
+
+    }
 }
