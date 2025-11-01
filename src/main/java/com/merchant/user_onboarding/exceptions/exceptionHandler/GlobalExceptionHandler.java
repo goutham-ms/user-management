@@ -48,4 +48,24 @@ public class GlobalExceptionHandler {
     }
 
 
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            String fieldName = error.getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(value = Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public @ResponseBody ErrorResponse handleGeneralException(Exception ex) {
+        return new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Error!");
+    }
+
 }
