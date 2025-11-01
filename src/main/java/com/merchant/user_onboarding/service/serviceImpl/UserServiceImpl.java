@@ -7,6 +7,8 @@ import com.merchant.user_onboarding.vos.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,18 +32,54 @@ public class UserServiceImpl implements UserService {
         return usersVO;
     }
 
+
+
     @Override
     public String addUser(UserVO user) {
-        return "";
+
+        UserEntity newUser = new UserEntity();
+
+        newUser.setUserId(user.getUserId());
+        newUser.setUserName(user.getUserName());
+        newUser.setAge(user.getAge());
+        newUser.setDepartment(user.getDepartment());
+        newUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth()));
+        newUser.setRegisteredDate(LocalDateTime.now());
+        newUser.setLastUpdated(LocalDateTime.now());
+
+
+        userRepository.save(newUser);
+
+        return "Success";
     }
 
     @Override
     public String updateUser(UserVO user) {
-        return "";
+        if(userRepository.existsByUserId(user.getUserId())) {
+
+            UserEntity existingUser = userRepository.findByUserId(user.getUserId());
+
+            existingUser.setUserName(user.getUserName());
+            existingUser.setAge(user.getAge());
+            existingUser.setDepartment(user.getDepartment());
+            existingUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth()));
+            existingUser.setLastUpdated(LocalDateTime.now());
+
+            userRepository.save(existingUser);
+
+            return "Updated";
+        }
+        return "Error";
     }
 
     @Override
     public String deleteUser(UserVO user) {
-        return "";
+        if(userRepository.existsByUserId(user.getUserId())) {
+            UserEntity existingUser = userRepository.findByUserId(user.getUserId());
+            userRepository.delete(existingUser);;
+
+            return "Deleted";
+        }
+        return "Error";
     }
 }
