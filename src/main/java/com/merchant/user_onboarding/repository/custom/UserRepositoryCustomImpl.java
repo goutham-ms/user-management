@@ -9,8 +9,8 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +21,7 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 
 
     @Override
-    public List<UserEntity> findUsersByCriteria(Optional<String> optionalKeyword, Optional<Long> optionalAge, Optional<String> optionalDapartment, Optional<String> optionalFrom, Optional<String> optionalTo) {
+    public List<UserEntity> findUsersByCriteria(Optional<String> optionalKeyword, Optional<Long> optionalAge, Optional<String> optionalDapartment, Optional<String> optionalFrom,Optional<String> optionalTo) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<UserEntity> cq = cb.createQuery(UserEntity.class);
 
@@ -33,45 +33,68 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
         final char LIKE_ESCAPE_CHAR = '\\';
         final String BACKSLASH = "\\";
 
-        String keyword = optionalKeyword.get();
-        Long age = optionalAge.get();
 
-		if(keyword != null && !keyword.isEmpty()) {
+        if (optionalKeyword.isPresent()) {
 
-			String escapeKeyword = keyword.replace(LIKE_ESCAPE_CHAR + "", LIKE_ESCAPE_CHAR + "" + LIKE_ESCAPE_CHAR)
-					.replace(LIKE_WILDCARD, LIKE_ESCAPE_CHAR + LIKE_WILDCARD);
+            String keyword = optionalKeyword.get();
 
-			String pattern = LIKE_WILDCARD + escapeKeyword + LIKE_WILDCARD;
+            String escapeKeyword = keyword.replace(BACKSLASH, BACKSLASH + BACKSLASH)
+                    .replace(LIKE_ESCAPE_CHAR + "", LIKE_ESCAPE_CHAR + "" + LIKE_ESCAPE_CHAR)
+                    .replace(LIKE_WILDCARD, LIKE_ESCAPE_CHAR + LIKE_WILDCARD);
 
-			Predicate keywordPredicate = cb.or(
-					cb.like(user.get("userId"), pattern , LIKE_ESCAPE_CHAR),
-					cb.like(user.get("userName"), pattern, LIKE_ESCAPE_CHAR),
-					cb.like(user.get("department"), pattern, LIKE_ESCAPE_CHAR)
-			);
+            String pattern = LIKE_WILDCARD + escapeKeyword + LIKE_WILDCARD;
 
-			if(age != null) {
+            Predicate keywordPredicate = cb.or(
+                    cb.like(user.get("userId"), pattern, LIKE_ESCAPE_CHAR),
+                    cb.like(user.get("userName"), pattern, LIKE_ESCAPE_CHAR),
+                    cb.like(user.get("department"), pattern, LIKE_ESCAPE_CHAR)
+            );
+            predicates.add(keywordPredicate);
+        }
 
-				Predicate agePredicate = cb.equal(user.get("age"), age);
-				Predicate finalPredicate = cb.and(keywordPredicate, agePredicate);
-				predicates.add(finalPredicate);
-				cq.where(predicates.toArray(new Predicate[0]));
-				TypedQuery<UserEntity> query = entityManager.createQuery(cq);
+        if (optionalAge.isPresent()) {
 
-				return query.getResultList();
+            Long age = optionalAge.get();
+            Predicate agePredicate = cb.equal(user.get("age"), age);
+            predicates.add(agePredicate);
+        }
 
-			} else {
+        if (optionalDapartment.isPresent()) {
 
-				predicates.add(keywordPredicate);
-				cq.where(predicates.toArray(new Predicate[0]));
-				TypedQuery<UserEntity> query = entityManager.createQuery(cq);
+            String department = optionalDapartment.get();
+            Predicate departmentPredicate = cb.equal(user.get("department"), department);
+            predicates.add(departmentPredicate);
+        }
 
-				return query.getResultList();
-			}
+        if (optionalFrom.isPresent()) {
+            if (optionalTo.isPresent()) {
+                LocalDate from = LocalDate.parse(optionalFrom.get());
+                LocalDate to = LocalDate.parse(optionalTo.get());
+//		    	Predicate datePredicate = cb.between(user.get("registeredDate"), from, to);
+//	    		predicates.add(datePredicate);
+
+                if (from.equals(to)) {
+                    Predicate greaterThanorEqual = cb.greaterThanOrEqualTo(user.get("registeredDate"), from);
+                    Predicate lessThan = cb.lessThan(user.get("registeredDate"), to.plusDays(1));
+                    predicates.add(greaterThanorEqual);
+                    predicates.add(lessThan);
+
+//	    			Predicate date = cb.equal(user.get("registeredDate"), from);
+//					predicates.add(date);
+                } else {
+                    Predicate greaterThanorEqual = cb.greaterThanOrEqualTo(user.get("registeredDate"), from);
+                    Predicate lessThanorEqual = cb.lessThanOrEqualTo(user.get("registeredDate"), to.plusDays(1));
+                    predicates.add(greaterThanorEqual);
+                    predicates.add(lessThanorEqual);
+                }
+
+            }
+        }
 
 
-		}
+        cq.where(cb.and(predicates.toArray(new Predicate[0])));
+        TypedQuery<UserEntity> query = entityManager.createQuery(cq);
+        return query.getResultList();
 
-		return Collections.emptyList();
     }
-
 }
