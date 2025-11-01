@@ -1,6 +1,8 @@
 package com.merchant.user_onboarding.service.serviceImpl;
 
+import com.merchant.user_onboarding.exceptions.AgeNotValidException;
 import com.merchant.user_onboarding.exceptions.DateNotValidException;
+import com.merchant.user_onboarding.exceptions.UserAlreadyExistsException;
 import com.merchant.user_onboarding.exceptions.UserNotFoundException;
 import com.merchant.user_onboarding.model.UserEntity;
 import com.merchant.user_onboarding.repository.UserRepository;
@@ -11,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,18 +41,46 @@ public class UserServiceImpl implements UserService {
         return usersVO;
     }
 
-
-
     @Override
     public String addUser(UserVO user) {
+        if(userRepository.existsByUserId(user.getUserId())) {
+            throw new UserAlreadyExistsException("User with id: " + user.getUserId() + " already exists.");
+        }
 
         UserEntity newUser = new UserEntity();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withResolverStyle(ResolverStyle.SMART);
+
+        try {
+            LocalDate date = LocalDate.parse(user.getDateOfBirth(), formatter);
+            if(date.isAfter(LocalDate.now())) {
+                throw new DateNotValidException("Date of Birth should be in the past");
+            }
+            if(date.isBefore(LocalDate.parse("1900-01-01"))) {
+                throw new DateNotValidException("Date of Birth should be after 1900-01-01");
+            }
+
+        } catch(DateTimeParseException ex) {
+            throw new DateNotValidException("Enter a valid Date of Birth in yyyy-MM-dd format");
+        }
+
+        try {
+            LocalDate date = LocalDate.parse(user.getDateOfBirth());
+            Period age = Period.between(date, LocalDate.now());
+            Integer calculatedAge =  age.getYears();
+
+            if(calculatedAge != user.getAge().intValue()) {
+                throw new AgeNotValidException("DOB and age does not match");
+            }
+
+        } catch (AgeNotValidException ex) {
+            throw new AgeNotValidException("Incorrect Age");
+        }
 
         newUser.setUserId(user.getUserId());
         newUser.setUserName(user.getUserName());
         newUser.setAge(user.getAge());
         newUser.setDepartment(user.getDepartment());
-        newUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth()));
+        newUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth(), formatter));
         newUser.setRegisteredDate(LocalDateTime.now());
         newUser.setLastUpdated(LocalDateTime.now());
 
@@ -61,19 +94,47 @@ public class UserServiceImpl implements UserService {
     public String updateUser(UserVO user) {
         if(userRepository.existsByUserId(user.getUserId())) {
 
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withResolverStyle(ResolverStyle.SMART);
+            try {
+                LocalDate date = LocalDate.parse(user.getDateOfBirth(), formatter);
+                if(date.isAfter(LocalDate.now())) {
+                    throw new DateNotValidException("Date of Birth should be in the past");
+                }
+                if(date.isBefore(LocalDate.parse("1900-01-01"))) {
+                    throw new DateNotValidException("Date of Birth should be after 1900-01-01");
+                }
+
+            } catch(DateTimeParseException ex) {
+                throw new DateNotValidException("Enter a valid Date of Birth");
+            }
+
+            try {
+                LocalDate date = LocalDate.parse(user.getDateOfBirth());
+                Period age = Period.between(date, LocalDate.now());
+                Integer calculatedAge =  age.getYears();
+
+                if(calculatedAge != user.getAge().intValue()) {
+                    throw new AgeNotValidException("DOB and age does not match");
+                }
+
+            } catch (AgeNotValidException ex) {
+                throw new AgeNotValidException("Incorrect Age");
+            }
+
             UserEntity existingUser = userRepository.findByUserId(user.getUserId());
 
             existingUser.setUserName(user.getUserName());
             existingUser.setAge(user.getAge());
             existingUser.setDepartment(user.getDepartment());
-            existingUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth()));
+            existingUser.setDateOfBirth(LocalDate.parse(user.getDateOfBirth(), formatter));
             existingUser.setLastUpdated(LocalDateTime.now());
 
             userRepository.save(existingUser);
 
             return "Updated";
+        } else {
+            throw new UserNotFoundException("No user found!");
         }
-        return "Error";
     }
 
     @Override
@@ -83,9 +144,11 @@ public class UserServiceImpl implements UserService {
             userRepository.delete(existingUser);;
 
             return "Deleted";
+        } else {
+            throw new UserNotFoundException("No user found!");
         }
-        return "Error";
     }
+
 
     @Override
     public List<UserVO> getUsers(Optional<String> keyword, Optional<Long> age, Optional<String> dapartment, Optional<String> from, Optional<String> to) {
