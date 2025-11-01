@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/user")
@@ -41,4 +42,10 @@ public class UserController {
         userService.deleteUser(user);
         return new ResponseEntity<>("User Deleted!", HttpStatus.OK);
     }
+
+    @GetMapping("/find-user")
+    public ResponseEntity<?> getUser(@RequestParam(required = false, defaultValue = "") String searchParam) {
+        return new ResponseEntity<>(userService.getUsers(searchParam), HttpStatus.OK);
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.merchant.user_onboarding.service.serviceImpl;
 
+import com.merchant.user_onboarding.exceptions.UserNotFoundException;
 import com.merchant.user_onboarding.model.UserEntity;
 import com.merchant.user_onboarding.repository.UserRepository;
 import com.merchant.user_onboarding.service.UserService;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,4 +84,25 @@ public class UserServiceImpl implements UserService {
         }
         return "Error";
     }
+
+    @Override
+	public List<UserVO> getUsers(String keyword) {
+		String search = "%" + keyword + "%";
+		Optional<List<UserEntity>> optionalUsers = userRepository.getUsers(search);
+
+
+		if(optionalUsers.isPresent()) {
+			List<UserEntity> users = optionalUsers.get();
+
+			List<UserVO> usersVO = users.stream()
+					.map(user -> new UserVO(user.getUserId(), user.getUserName(),
+							user.getAge(), user.getDepartment(), user.getDateOfBirth().toString(),
+							user.getRegisteredDate().toString(), user.getLastUpdated().toString()))
+					.collect(Collectors.toList());
+			return usersVO;
+		} else {
+			throw new UserNotFoundException("No user found!");
+		}
+
+	}
 }

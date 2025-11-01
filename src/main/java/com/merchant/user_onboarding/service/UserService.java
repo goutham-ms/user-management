@@ -10,4 +10,5 @@ public interface UserService {
     public String addUser(UserVO user);
     public String updateUser(UserVO user);
     public String deleteUser(UserVO user);
+    public List<UserVO> getUsers(String keyword);
 }
