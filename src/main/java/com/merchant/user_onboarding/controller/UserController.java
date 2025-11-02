@@ -2,6 +2,8 @@ package com.merchant.user_onboarding.controller;
 
 import com.merchant.user_onboarding.service.UserService;
 import com.merchant.user_onboarding.vos.UserVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -17,35 +19,41 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/user")
 @Validated
+@Tag(name = "User", description = "API for managing Users")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     @GetMapping("/get-users")
+    @Operation(summary = "Get Users")
     public List<UserVO> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @PostMapping("/create-user")
+    @Operation(summary = "Create a new User")
     public ResponseEntity<String> createUser(@Valid @RequestBody UserVO user) {
         userService.addUser(user);
         return new ResponseEntity<>("New User Created!", HttpStatus.OK);
     }
 
     @PutMapping("/update-user")
+    @Operation(summary = "Update a User")
     public ResponseEntity<String> updateUser(@Valid @RequestBody UserVO user) {
         userService.updateUser(user);
         return new ResponseEntity<>("User Updated!", HttpStatus.OK);
     }
 
     @DeleteMapping("/delete-user")
+    @Operation(summary = "Delete a User")
     public ResponseEntity<String> deleteUser(@Valid @RequestBody UserVO user) {
         userService.deleteUser(user);
         return new ResponseEntity<>("User Deleted!", HttpStatus.OK);
     }
 
     @GetMapping("/find-user")
+    @Operation(summary = "Get filtered Users")
     public ResponseEntity<?> getUser(@RequestParam(required = false, defaultValue = "")Optional<String>searchParam,
                                      @RequestParam(required=false) Optional<Long> ageParam,
                                      @RequestParam(required = false) Optional<String> departmentParam,
@@ -56,6 +64,7 @@ public class UserController {
     }
 
     @GetMapping("/export-excel")
+    @Operation(summary = "Export user details as excel file")
     public ResponseEntity<?> saveUserDetails(@RequestParam(required = false, defaultValue = "")Optional<String>searchParam,
                                              @RequestParam(required=false) Optional<Long> ageParam,
                                              @RequestParam(required = false) Optional<String> departmentParam,
