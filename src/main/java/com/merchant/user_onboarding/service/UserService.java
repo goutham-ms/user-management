@@ -12,4 +12,5 @@ public interface UserService {
     public String updateUser(UserVO user);
     public String deleteUser(UserVO user);
     public List<UserVO> getUsers(Optional<String> keyword, Optional<Long> age, Optional<String> department, Optional<String> from, Optional<String> to);
+    public byte[] saveUserDetails(Optional<String> keyword, Optional<Long> age, Optional<String> department, Optional<String> from, Optional<String> to);
 }

@@ -4,7 +4,9 @@ import com.merchant.user_onboarding.service.UserService;
 import com.merchant.user_onboarding.vos.UserVO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -51,6 +53,22 @@ public class UserController {
                                      @RequestParam(required = false) Optional<String> toParam) {
 
         return new ResponseEntity<>(userService.getUsers(searchParam, ageParam, departmentParam, fromParam, toParam), HttpStatus.OK);
+    }
+
+    @GetMapping("/export-excel")
+    public ResponseEntity<?> saveUserDetails(@RequestParam(required = false, defaultValue = "")Optional<String>searchParam,
+                                             @RequestParam(required=false) Optional<Long> ageParam,
+                                             @RequestParam(required = false) Optional<String> departmentParam,
+                                             @RequestParam(required = false) Optional<String> fromParam,
+                                             @RequestParam(required = false) Optional<String> toParam) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", "users.xlsx");
+
+        byte[] excelData = userService.saveUserDetails(searchParam, ageParam, departmentParam, fromParam, toParam);
+
+        return new ResponseEntity<>(excelData, headers, HttpStatus.OK);
     }
 
 }

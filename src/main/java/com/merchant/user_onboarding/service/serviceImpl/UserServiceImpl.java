@@ -8,9 +8,16 @@ import com.merchant.user_onboarding.model.UserEntity;
 import com.merchant.user_onboarding.repository.UserRepository;
 import com.merchant.user_onboarding.service.UserService;
 import com.merchant.user_onboarding.vos.UserVO;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -186,4 +193,83 @@ public class UserServiceImpl implements UserService {
         }
 
     }
+
+
+    @Override
+    public byte[] saveUserDetails(Optional<String> keyword, Optional<Long> age, Optional<String> dapartment, Optional<String> from, Optional<String> to) {
+
+        if(from.isPresent()) {
+            if(to.isPresent()) {
+                try {
+                    LocalDate fromDate = LocalDate.parse(from.get());
+                    LocalDate toDate = LocalDate.parse(to.get());
+                    if(toDate.isBefore(fromDate)) {
+                        throw new DateNotValidException("From-date should be before To-date");
+                    }
+                }catch(DateTimeParseException ex) {
+                    throw new DateNotValidException("Enter a valid Date!");
+                }
+
+
+            } else {
+                throw new DateNotValidException("To Date is also required");
+            }
+        }
+
+        List<UserEntity> users = userRepository.findUsersByCriteria(keyword, age, dapartment, from, to);
+
+        if(!users.isEmpty()) {
+
+            List<UserVO> usersVO = users.stream()
+                    .map(user -> new UserVO(user.getUserId(), user.getUserName(),
+                            user.getAge(), user.getDepartment(), user.getDateOfBirth().toString(),
+                            user.getRegisteredDate().toString(), user.getLastUpdated().toString()))
+                    .collect(Collectors.toList());
+
+
+
+            return generateExcelFile(usersVO);
+        } else {
+            throw new UserNotFoundException("No user found!");
+        }
+
+    }
+
+
+    private byte[] generateExcelFile(List<UserVO> data) {
+
+        try {
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Data Sheet");
+
+            Row headerRow = sheet.createRow(0);
+            String[] headers = {"User Id", "User Name", "Age", "Department", "DOB", "Registered Dae", "Updated Date"};
+            for(int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+
+            int rowNum = 1;
+            for(UserVO item : data) {
+                Row row = sheet.createRow(rowNum++);
+
+                row.createCell(0).setCellValue(item.getUserId());
+                row.createCell(1).setCellValue(item.getUserName());
+                row.createCell(2).setCellValue(item.getAge());
+                row.createCell(3).setCellValue(item.getDepartment());
+                row.createCell(4).setCellValue(item.getDateOfBirth());
+                row.createCell(5).setCellValue(item.getRegisteredDate());
+                row.createCell(6).setCellValue(item.getUpdatedDate());
+            }
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook.write(outputStream);
+            workbook.close();
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            System.err.println("Error while writing to file");
+        }
+        return null;
+    }
+
 }
