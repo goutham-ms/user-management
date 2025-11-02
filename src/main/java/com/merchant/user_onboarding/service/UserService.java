@@ -9,8 +9,8 @@ public interface UserService {
 
     public List<UserVO> getAllUsers();
     public String addUser(UserVO user);
-    public String updateUser(UserVO user);
-    public String deleteUser(UserVO user);
+    public String updateUser(UserVO user, String id);
+    public String deleteUser(String id);
     public List<UserVO> getUsers(Optional<String> keyword, Optional<Long> age, Optional<String> department, Optional<String> from, Optional<String> to);
     public byte[] saveUserDetails(Optional<String> keyword, Optional<Long> age, Optional<String> department, Optional<String> from, Optional<String> to);
 }

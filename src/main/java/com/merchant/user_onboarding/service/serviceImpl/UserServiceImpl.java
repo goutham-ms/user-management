@@ -98,8 +98,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String updateUser(UserVO user) {
-        if(userRepository.existsByUserId(user.getUserId())) {
+    public String updateUser(UserVO user, String id) {
+        if(userRepository.existsByUserId(id)) {
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withResolverStyle(ResolverStyle.SMART);
             try {
@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService {
                 throw new AgeNotValidException("Incorrect Age");
             }
 
-            UserEntity existingUser = userRepository.findByUserId(user.getUserId());
+            UserEntity existingUser = userRepository.findByUserId(id);
 
             existingUser.setUserName(user.getUserName());
             existingUser.setAge(user.getAge());
@@ -145,9 +145,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String deleteUser(UserVO user) {
-        if(userRepository.existsByUserId(user.getUserId())) {
-            UserEntity existingUser = userRepository.findByUserId(user.getUserId());
+    public String deleteUser(String id) {
+        if(userRepository.existsByUserId(id)) {
+            UserEntity existingUser = userRepository.findByUserId(id);
             userRepository.delete(existingUser);;
 
             return "Deleted";
